@@ -82,11 +82,50 @@ StartScreenWidget::StartScreenWidget( QWidget* parent, moveit_setup_assistant::M
   // Right side of screen
   QVBoxLayout *right_layout = new QVBoxLayout( );
 
+
+  // Right Image Area ----------------------------------------------
+  right_image_ = new QImage();  
+  right_image_label_ = new QLabel( this );
+  std::string image_path = "./resources/MoveIt_Setup_Asst_xSm.png";
+  if(chdir(config_data_->setup_assistant_path_.c_str()) != 0)
+  {
+    ROS_ERROR("FAILED TO CHANGE PACKAGE TO moveit_setup_assistant");
+  }
+
+  if (right_image_->load( image_path.c_str() ))
+  {
+    right_image_label_->setPixmap(QPixmap::fromImage( *right_image_));
+    right_image_label_->setMinimumHeight(384);  // size of right_image_label_
+    //right_image_label_->setMinimumWidth(450);
+  }
+  else
+  {
+    ROS_ERROR_STREAM("FAILED TO LOAD " << image_path );
+  }
+
+  logo_image_ = new QImage();  
+  logo_image_label_ = new QLabel( this );
+  image_path = "./resources/moveit_logo.png";
+
+  if (logo_image_->load( image_path.c_str() ))
+  {
+    logo_image_label_->setPixmap(QPixmap::fromImage( *logo_image_));
+    logo_image_label_->setMinimumWidth(96); 
+  }
+  else
+  {
+    ROS_ERROR_STREAM("FAILED TO LOAD " << image_path );
+  }
+
+
   // Top Label Area ---------------------------------------------------
   HeaderWidget *header = new HeaderWidget( "MoveIt Setup Assistant",
                                            "Welcome to the MoveIt Setup Assistant! These tools will assist you in creating a MoveIt configuration package that is required to run MoveIt. This includes generating a Semantic Robot Description Format (SRDF) file, kinematics configuration file and OMPL planning configuration file. It also involves creating launch files for move groups, OMPL planner, planning contexts and the planning warehouse.",
                                            this);
   layout->addWidget( header );
+
+  left_layout->addWidget(logo_image_label_);
+  left_layout->setAlignment(logo_image_label_, Qt::AlignLeft | Qt::AlignTop);
 
   // Select Mode Area -------------------------------------------------
   select_mode_ = new SelectModeWidget( this );
@@ -105,7 +144,7 @@ StartScreenWidget::StartScreenWidget( QWidget* parent, moveit_setup_assistant::M
 
   // URDF File Dialog
   urdf_file_ = new LoadPathWidget("Load a URDF or COLLADA Robot Model",
-                                  "Specify the location of an existing Universal Robot Description Format or COLLADA file for your robot. The robot model will be loaded to the parameter server for you. \nNote: an XACRO URDF must first be converted to a regular XML URDF before opening here. To convert a file run the following command: <i>rosrun xacro xacro.py model.xacro > model.urdf</i>",
+                                  "Specify the location of an existing Universal Robot Description Format or COLLADA file for your robot. The robot model will be loaded to the parameter server for you.",
                                   false, true, this); // no directory, load only
   urdf_file_->hide(); // user needs to select option before this is shown
   left_layout->addWidget( urdf_file_ );
@@ -137,21 +176,6 @@ StartScreenWidget::StartScreenWidget( QWidget* parent, moveit_setup_assistant::M
   //  next_label_->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
   next_label_->hide(); // only show once the files have been loaded.
 
-  // Right Image Area ----------------------------------------------
-  right_image_ = new QImage();
-  const std::string image_path = "./resources/MoveIt_Setup_Asst_xSm.png";
-  if(chdir(config_data_->setup_assistant_path_.c_str()) != 0)
-  {
-    ROS_ERROR("FAILED TO CHANGE PACKAGE TO moveit_setup_assistant");
-  }
-  if(!right_image_->load( image_path.c_str() ) )
-  {
-    ROS_ERROR_STREAM("FAILED TO LOAD " << image_path );
-  }
-  right_image_label_ = new QLabel( this );
-  right_image_label_->setPixmap(QPixmap::fromImage( *right_image_));
-  right_image_label_->setMinimumHeight(384);  // size of right_image_label_
-  //right_image_label_->setMinimumWidth(450);
   right_layout->addWidget(right_image_label_);
   right_layout->setAlignment(right_image_label_, Qt::AlignRight | Qt::AlignTop);
 
@@ -204,8 +228,8 @@ StartScreenWidget::StartScreenWidget( QWidget* parent, moveit_setup_assistant::M
 // ******************************************************************************************
 StartScreenWidget::~StartScreenWidget()
 {
-
   delete right_image_; // does not have a parent passed to it
+  delete logo_image_;
 }
 
 // ******************************************************************************************
@@ -475,15 +499,33 @@ bool StartScreenWidget::loadURDFFile( const std::string& urdf_file_path )
     QMessageBox::warning( this, "Error Loading Files", QString( "URDF/COLLADA file not found: " ).append( urdf_file_path.c_str() ) );
     return false;
   }
-
-  // Load the file to a string using an efficient memory allocation technique
   std::string urdf_string;
-  urdf_stream.seekg(0, std::ios::end);
-  urdf_string.reserve(urdf_stream.tellg());
-  urdf_stream.seekg(0, std::ios::beg);
-  urdf_string.assign( (std::istreambuf_iterator<char>(urdf_stream)), std::istreambuf_iterator<char>() );
-  urdf_stream.close();
-
+  
+  if(urdf_file_path.find(".xacro") != std::string::npos)
+  {
+    std::string cmd("rosrun xacro xacro.py ");
+    cmd += urdf_file_path;
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe){
+      QMessageBox::warning( this, "Error Loading Files", QString( "XACRO file or parser not found: " ).append( urdf_file_path.c_str() ) );
+      return false;
+    }
+    char buffer[128];
+    while(!feof(pipe)) {
+        if(fgets(buffer, 128, pipe) != NULL)
+                urdf_string += buffer;
+    }
+    pclose(pipe);
+  }
+  else
+  {
+    // Load the file to a string using an efficient memory allocation technique
+    urdf_stream.seekg(0, std::ios::end);
+    urdf_string.reserve(urdf_stream.tellg());
+    urdf_stream.seekg(0, std::ios::beg);
+    urdf_string.assign( (std::istreambuf_iterator<char>(urdf_stream)), std::istreambuf_iterator<char>() );
+    urdf_stream.close();
+  }
   // Verify that file is in correct format / not an XACRO by loading into robot model
   if( !config_data_->urdf_model_->initString( urdf_string ) )
   {
