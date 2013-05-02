@@ -228,8 +228,8 @@ bool ConfigurationFilesWidget::loadGenFiles()
   gen_files_.push_back(file);
 
   // robot.srdf ----------------------------------------------------------------------------------------------
-  file.file_name_   = config_data_->urdf_model_->getName() + ".srdf";
-  file.rel_path_    = config_data_->appendPaths( config_path, file.file_name_ );
+  file.file_name_   = config_data_->srdf_pkg_relative_path_.empty() ? config_data_->urdf_model_->getName() + ".srdf" : config_data_->srdf_pkg_relative_path_;
+  file.rel_path_    = config_data_->srdf_pkg_relative_path_.empty() ? config_data_->appendPaths( config_path, file.file_name_ ) : config_data_->srdf_pkg_relative_path_;
   file.description_ = "SRDF (<a href='http://www.ros.org/wiki/srdf'>Semantic Robot Description Format</a>) is a representation of semantic information about robots. This format is intended to represent information about the robot that is not in the URDF file, but it is useful for a variety of applications. The intention is to include information that has a semantic aspect to it.";
   file.gen_func_    = boost::bind(&SRDFWriter::writeSRDF, config_data_->srdf_, _1);
   gen_files_.push_back(file);
@@ -326,8 +326,16 @@ bool ConfigurationFilesWidget::loadGenFiles()
   file.gen_func_    = boost::bind(&ConfigurationFilesWidget::copyTemplate, this, template_path, _1);
   gen_files_.push_back(file);
 
-  // run_benchmark_server_ompl.launch --------------------------------------------------------------------------------------
-  file.file_name_   = "run_benchmark_server_ompl.launch";
+  // default_warehouse_db.launch --------------------------------------------------------------------------------------
+  file.file_name_   = "default_warehouse_db.launch";
+  file.rel_path_    = config_data_->appendPaths( launch_path, file.file_name_ );
+  template_path     = config_data_->appendPaths( template_launch_path, file.file_name_ );
+  file.description_ = "Launch file for starting the warehouse with a default MongoDB.";
+  file.gen_func_    = boost::bind(&ConfigurationFilesWidget::copyTemplate, this, template_path, _1);
+  gen_files_.push_back(file);
+
+  // run_benchmark_ompl.launch --------------------------------------------------------------------------------------
+  file.file_name_   = "run_benchmark_ompl.launch";
   file.rel_path_    = config_data_->appendPaths( launch_path, file.file_name_ );
   template_path     = config_data_->appendPaths( template_launch_path, file.file_name_ );
   file.description_ = "Launch file for benchmarking OMPL planners";
