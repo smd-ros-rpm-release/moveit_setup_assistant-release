@@ -181,8 +181,20 @@ DefaultCollisionsWidget::DefaultCollisionsWidget( QWidget *parent,
   collision_checkbox_->setText("Show Non-Disabled Link Pairs");
   connect(collision_checkbox_, SIGNAL(toggled(bool)), this, SLOT(collisionCheckboxToggle()));
   controls_box_bottom_layout->addWidget(collision_checkbox_);
-  controls_box_bottom_layout->setAlignment(collision_checkbox_, Qt::AlignLeft);
 
+  fraction_label_ = new QLabel(this);
+  fraction_label_->setText("Min. collisions for \"always\"-colliding pairs:");
+
+  controls_box_bottom_layout->addWidget(fraction_label_);
+  
+  fraction_spinbox_ = new QSpinBox(this);
+  fraction_spinbox_->setRange(1, 100);
+  fraction_spinbox_->setValue(95);
+  fraction_spinbox_->setSuffix("%");
+  controls_box_bottom_layout->addWidget(fraction_spinbox_);
+
+  controls_box_bottom_layout->setAlignment(collision_checkbox_, Qt::AlignLeft);
+  
   setLayout(layout_);
 
   setWindowTitle("Default Collision Matrix");
@@ -194,7 +206,7 @@ DefaultCollisionsWidget::DefaultCollisionsWidget( QWidget *parent,
 void DefaultCollisionsWidget::generateCollisionTable()
 {
   // Confirm the user wants to overwrite the current disabled collisions
-  if( link_pairs_.size() )
+  if( !config_data_->srdf_->disabled_collisions_.empty() )
   {
     if( QMessageBox::question( this, "Confirm Disabled Collision Overwrite",
                                "Are you sure you want to overwrite the current default collisions matrix with a newly generated one?",
@@ -255,15 +267,19 @@ void DefaultCollisionsWidget::generateCollisionTable()
 void DefaultCollisionsWidget::generateCollisionTableThread( unsigned int *collision_progress )
 {
   unsigned int num_trials = density_slider_->value() * 1000 + 1000; // scale to trials amount
-
+  double min_frac = (double)fraction_spinbox_->value() / 100.0;
+  
   const bool verbose = true; // Output benchmarking and statistics
   const bool include_never_colliding = true;
 
+  // clear previously loaded collision matrix entries
+  config_data_->getPlanningScene()->getAllowedCollisionMatrixNonConst().clear();
+  
   // Find the default collision matrix - all links that are allowed to collide
   link_pairs_ = 
     moveit_setup_assistant::computeDefaultCollisions( config_data_->getPlanningScene(), 
                                                       collision_progress, include_never_colliding, num_trials, 
-                                                      verbose);
+                                                      min_frac, verbose);
 
   // Copy data changes to srdf_writer object
   linkPairsToSRDF();
@@ -294,7 +310,7 @@ void DefaultCollisionsWidget::loadCollisionTable()
   collision_table_->clearContents();
 
   // Check if there are no disabled collisions (unprobable?)
-  if(link_pairs_.size() == 0)
+  if(link_pairs_.empty())
   {
     collision_table_->setRowCount(1);
     QTableWidgetItem* no_collide = new QTableWidgetItem("No Link Pairs Of This Kind");
