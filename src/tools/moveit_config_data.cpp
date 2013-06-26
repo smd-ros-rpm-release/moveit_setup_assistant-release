@@ -215,60 +215,21 @@ bool MoveItConfigData::outputOMPLPlanningYAML( const std::string& file_path )
 
   emitter << YAML::Value << YAML::BeginMap;
 
-  // Add Planner
-  emitter << YAML::Key << "SBLkConfigDefault";
-  emitter << YAML::Value << YAML::BeginMap;
-  emitter << YAML::Key << "type" << YAML::Value << "geometric::SBL";
-  emitter << YAML::EndMap;
-
-  // Add Planner
-  emitter << YAML::Key << "LBKPIECEkConfigDefault";
-  emitter << YAML::Value << YAML::BeginMap;
-  emitter << YAML::Key << "type" << YAML::Value << "geometric::LBKPIECE";
-  emitter << YAML::EndMap;
-
-  // Add Planner
-  emitter << YAML::Key << "RRTkConfigDefault";
-  emitter << YAML::Value << YAML::BeginMap;
-  emitter << YAML::Key << "type" << YAML::Value << "geometric::RRT";
-  emitter << YAML::EndMap;
-
-  // Add Planner
-  emitter << YAML::Key << "RRTConnectkConfigDefault";
-  emitter << YAML::Value << YAML::BeginMap;
-  emitter << YAML::Key << "type" << YAML::Value << "geometric::RRTConnect";
-  emitter << YAML::EndMap;
-
-  // Add Planner
-  emitter << YAML::Key << "LazyRRTkConfigDefault";
-  emitter << YAML::Value << YAML::BeginMap;
-  emitter << YAML::Key << "type" << YAML::Value << "geometric::LazyRRT";
-  emitter << YAML::EndMap;
-
-  // Add Planner
-  emitter << YAML::Key << "ESTkConfigDefault";
-  emitter << YAML::Value << YAML::BeginMap;
-  emitter << YAML::Key << "type" << YAML::Value << "geometric::EST";
-  emitter << YAML::EndMap;
-
-  // Add Planner
-  emitter << YAML::Key << "KPIECEkConfigDefault";
-  emitter << YAML::Value << YAML::BeginMap;
-  emitter << YAML::Key << "type" << YAML::Value << "geometric::KPIECE";
-  emitter << YAML::EndMap;
-
-  // Add Planner
-  emitter << YAML::Key << "RRTStarkConfigDefault";
-  emitter << YAML::Value << YAML::BeginMap;
-  emitter << YAML::Key << "type" << YAML::Value << "geometric::RRTstar";
-  emitter << YAML::EndMap;
-
-  // Add Planner
-  emitter << YAML::Key << "BKPIECEkConfigDefault";
-  emitter << YAML::Value << YAML::BeginMap;
-  emitter << YAML::Key << "type" << YAML::Value << "geometric::BKPIECE";
-  emitter << YAML::EndMap;
-
+  // Add Planners
+  static const std::string planners[] = 
+    {"SBL", "EST", "LBKPIECE", "BKPIECE", "KPIECE", "RRT", "RRTConnect", "RRTstar", "PRM", "PRMstar" };
+  
+  std::vector<std::string> pconfigs;
+  for (std::size_t i = 0 ; i < sizeof(planners) / sizeof(std::string) ; ++i)
+  {  
+    std::string defaultconfig = planners[i] + "kConfigDefault";
+    emitter << YAML::Key << defaultconfig;
+    emitter << YAML::Value << YAML::BeginMap;
+    emitter << YAML::Key << "type" << YAML::Value << "geometric::" + planners[i];
+    emitter << YAML::EndMap;
+    pconfigs.push_back(defaultconfig);
+  }
+  
   // End of every avail planner
   emitter << YAML::EndMap;
 
@@ -281,10 +242,10 @@ bool MoveItConfigData::outputOMPLPlanningYAML( const std::string& file_path )
     // Output associated planners
     emitter << YAML::Key << "planner_configs";
     emitter << YAML::Value << YAML::BeginSeq;
-    emitter << "SBLkConfigDefault" << "LBKPIECEkConfigDefault" << "RRTkConfigDefault"
-            << "RRTConnectkConfigDefault" << "ESTkConfigDefault" << "KPIECEkConfigDefault"
-            << "BKPIECEkConfigDefault" << "RRTStarkConfigDefault" << YAML::EndSeq;
-
+    for (std::size_t i = 0 ; i < pconfigs.size() ; ++i)
+      emitter << pconfigs[i];
+    emitter << YAML::EndSeq;
+    
     // Output projection_evaluator
     std::string projection_joints = decideProjectionJoints( group_it->name_ );
     if( !projection_joints.empty() )
@@ -379,11 +340,11 @@ bool MoveItConfigData::outputJointLimitsYAML( const std::string& file_path )
   emitter << YAML::Value << YAML::BeginMap;
 
   // Union all the joints in groups
-  std::set<std::string> joints;
+  std::set<const robot_model::JointModel*> joints;
 
   // Loop through groups
-  for( std::vector<srdf::Model::Group>::iterator group_it = srdf_->groups_.begin();
-       group_it != srdf_->groups_.end();  ++group_it )
+  for (std::vector<srdf::Model::Group>::iterator group_it = srdf_->groups_.begin();
+       group_it != srdf_->groups_.end();  ++group_it)
   {
     // Get list of associated joints
     const robot_model::JointModelGroup *joint_model_group =
@@ -392,30 +353,33 @@ bool MoveItConfigData::outputJointLimitsYAML( const std::string& file_path )
     std::vector<const robot_model::JointModel*> joint_models = joint_model_group->getJointModels();
 
     // Iterate through the joints
-    for( std::vector<const robot_model::JointModel*>::const_iterator joint_it = joint_models.begin();
-         joint_it < joint_models.end(); ++joint_it )
+    for (std::vector<const robot_model::JointModel*>::const_iterator joint_it = joint_models.begin();
+         joint_it != joint_models.end(); ++joint_it)
     {
       // Check that this joint only represents 1 variable.
-      if( (*joint_it)->getVariableCount() == 1 )
-      {
-        joints.insert( (*joint_it)->getName() );
-      }
+      if ((*joint_it)->getVariableCount() == 1)
+        joints.insert(*joint_it);
     }
   }
 
   // Add joints to yaml file, if no more than 1 dof
-  for ( std::set<std::string>::iterator joint_it = joints.begin() ; joint_it != joints.end() ; ++joint_it )
+  for ( std::set<const robot_model::JointModel*>::iterator joint_it = joints.begin() ; joint_it != joints.end() ; ++joint_it )
   {
-    emitter << YAML::Key << *joint_it;
+    emitter << YAML::Key << (*joint_it)->getName();
     emitter << YAML::Value << YAML::BeginMap;
-
+    
+    double vel = (*joint_it)->getMaximumVelocity();
+    
     // Output property
     emitter << YAML::Key << "has_velocity_limits";
-    emitter << YAML::Value << "true";
-
+    if (vel > std::numeric_limits<double>::epsilon())
+      emitter << YAML::Value << "true";
+    else
+      emitter << YAML::Value << "false";
+    
     // Output property
     emitter << YAML::Key << "max_velocity";
-    emitter << YAML::Value << "1.0";
+    emitter << YAML::Value << (*joint_it)->getMaximumVelocity();
 
     // Output property
     emitter << YAML::Key << "has_acceleration_limits";
@@ -423,8 +387,8 @@ bool MoveItConfigData::outputJointLimitsYAML( const std::string& file_path )
 
     // Output property
     emitter << YAML::Key << "max_acceleration";
-    emitter << YAML::Value << "1.0";
-
+    emitter << YAML::Value << (*joint_it)->getMaximumVelocity() / 5.0;
+    
     emitter << YAML::EndMap;
   }
 
