@@ -1,3 +1,22 @@
+## moveit_setup_assistant - 0.4.2-0
+
+User `isucan@i7` released the packages in the `moveit_setup_assistant` repository by running `/usr/local/bin/bloom-release -t groovy -r groovy moveit_setup_assistant` on `Wed, 18 Sep 2013 20:59:57 -0000`
+
+The `moveit_setup_assistant` package was released.
+
+Version of package(s) in repository `moveit_setup_assistant`:
+- rosdistro version: `0.4.1-0`
+- old version: `0.4.1-0`
+- new version: `0.4.2-0`
+
+Versions of tools used:
+- bloom version: `0.4.4`
+- catkin_pkg version: `0.1.19`
+- rosdep version: `0.10.21`
+- rosdistro version: `0.2.14`
+- vcstools version: `0.1.31`
+
+
 ## moveit_setup_assistant - 0.5.2-0
 
 User `isucan@e6400` released the packages in the `moveit_setup_assistant` repository by running `/usr/bin/bloom-release -t hydro -r hydro moveit_setup_assistant` on `Fri, 16 Aug 2013 10:04:18 -0000`
