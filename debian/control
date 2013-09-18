@@ -1,0 +1,12 @@
+Source: ros-groovy-moveit-setup-assistant
+Section: misc
+Priority: extra
+Maintainer: Ioan Sucan <isucan@willowgarage.com>
+Build-Depends: debhelper (>= 7.0.50~), ros-groovy-catkin, ros-groovy-moveit-core, ros-groovy-moveit-ros-planning, ros-groovy-moveit-ros-visualization, yaml-cpp0.2.6-dev
+Homepage: http://moveit.ros.org
+Standards-Version: 3.9.2
+
+Package: ros-groovy-moveit-setup-assistant
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-groovy-moveit-core, ros-groovy-moveit-ros-planning, ros-groovy-moveit-ros-visualization, yaml-cpp0.2.6-dev
+Description: Generates a configuration package that makes it easy to use MoveIt!
