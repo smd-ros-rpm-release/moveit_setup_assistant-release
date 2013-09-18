@@ -2,25 +2,6 @@
 Changelog for package moveit_setup_assistant
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.5.2 (2013-08-16)
-------------------
-* fix `#50 <https://github.com/ros-planning/moveit_setup_assistant/issues/50>`_
-* fix `#52 <https://github.com/ros-planning/moveit_setup_assistant/issues/52>`_
-
-0.5.1 (2013-08-13)
-------------------
-* make headers and author definitions aligned the same way; white space fixes
-* add debug flag to demo.launch template
-* default scene alpha is now 1.0
-* add robot_state_publisher dependency for generated pkgs
-* disable mongodb creation by default in demo.launch
-* add dependency on joint_state_publisher for generated config pkgs
-
-0.5.0 (2013-07-15)
-------------------
-* white space fixes (tabs are now spaces)
-* fix `#49 <https://github.com/ros-planning/moveit_setup_assistant/issues/49>`_
-
 0.4.1 (2013-06-26)
 ------------------
 * fix `#44 <https://github.com/ros-planning/moveit_setup_assistant/issues/44>`_
