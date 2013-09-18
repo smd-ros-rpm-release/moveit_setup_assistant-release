@@ -71,7 +71,7 @@ StartScreenWidget::StartScreenWidget( QWidget* parent, moveit_setup_assistant::M
   :  SetupScreenWidget( parent ), config_data_( config_data )
 {
 
-  
+
   // Basic widget container
   QVBoxLayout *layout = new QVBoxLayout( this );
 
@@ -84,7 +84,7 @@ StartScreenWidget::StartScreenWidget( QWidget* parent, moveit_setup_assistant::M
 
 
   // Right Image Area ----------------------------------------------
-  right_image_ = new QImage();  
+  right_image_ = new QImage();
   right_image_label_ = new QLabel( this );
   std::string image_path = "./resources/MoveIt_Setup_Asst_xSm.png";
   if(chdir(config_data_->setup_assistant_path_.c_str()) != 0)
@@ -103,14 +103,14 @@ StartScreenWidget::StartScreenWidget( QWidget* parent, moveit_setup_assistant::M
     ROS_ERROR_STREAM("FAILED TO LOAD " << image_path );
   }
 
-  logo_image_ = new QImage();  
+  logo_image_ = new QImage();
   logo_image_label_ = new QLabel( this );
   image_path = "./resources/moveit_logo.png";
 
   if (logo_image_->load( image_path.c_str() ))
   {
     logo_image_label_->setPixmap(QPixmap::fromImage( *logo_image_));
-    logo_image_label_->setMinimumWidth(96); 
+    logo_image_label_->setMinimumWidth(96);
   }
   else
   {
@@ -501,13 +501,13 @@ bool StartScreenWidget::loadURDFFile( const std::string& urdf_file_path )
   }
   std::string urdf_string;
   bool xacro = false;
-  
+
   if (urdf_file_path.find(".xacro") != std::string::npos)
-  { 
+  {
     std::string cmd("rosrun xacro xacro.py ");
     cmd += urdf_file_path;
     ROS_INFO( "Running '%s'...", cmd.c_str() );
-    
+
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe)
     {
@@ -521,6 +521,12 @@ bool StartScreenWidget::loadURDFFile( const std::string& urdf_file_path )
         urdf_string += buffer;
     }
     pclose(pipe);
+    
+    if (urdf_string.empty())
+    {
+      QMessageBox::warning( this, "Error Loading Files", QString( "Unable to parse XACRO file: " ).append( urdf_file_path.c_str() ) );
+      return false;
+    }
     xacro = true;
   }
   else
@@ -536,11 +542,11 @@ bool StartScreenWidget::loadURDFFile( const std::string& urdf_file_path )
   if( !config_data_->urdf_model_->initString( urdf_string ) )
   {
     QMessageBox::warning( this, "Error Loading Files",
-                          "URDF/COLLADA file is not a valid robot model. Is the URDF still in XACRO format?" );
+                          "URDF/COLLADA file is not a valid robot model." );
     return false;
   }
   config_data_->urdf_from_xacro_ = xacro;
-  
+
   ROS_INFO_STREAM( "Loaded " << config_data_->urdf_model_->getName() << " robot model." );
 
   // Load the robot model to the parameter server
@@ -556,7 +562,7 @@ bool StartScreenWidget::loadURDFFile( const std::string& urdf_file_path )
 
   ROS_INFO("Setting Param Server with Robot Description");
   //ROS_WARN("Ignore the following error message 'Failed to contact master'. This is a known issue.");
-  nh.setParam("/robot_description", urdf_string); 
+  nh.setParam("/robot_description", urdf_string);
 
   return true;
 }
@@ -642,7 +648,7 @@ bool StartScreenWidget::extractPackageNameFromPath()
   // Copy path into vector of parts
   for (fs::path::iterator it = urdf_directory.begin(); it != urdf_directory.end(); ++it)
     path_parts.push_back( it->native() );
-
+  
   bool packageFound = false;
 
   // reduce the generated directoy path's folder count by 1 each loop
@@ -663,17 +669,17 @@ bool StartScreenWidget::extractPackageNameFromPath()
       }
     }
 
-    // check if this directory has a package.xml 
+    // check if this directory has a package.xml
     package_path = sub_path;
     package_path /= "package.xml";
     ROS_DEBUG_STREAM("Checking for " << package_path.make_preferred().native());
-    
+
     // Check if the files exist
     if( fs::is_regular_file( package_path ) || fs::is_regular_file( sub_path / "manifest.xml" ))
     {
       // now generate the relative path
       for( size_t relative_count = segment_length; relative_count < path_parts.size(); ++relative_count )
-        relative_path /= path_parts[ segment_length ];
+        relative_path /= path_parts[ relative_count ];
 
       // add the URDF filename at end of relative path
       relative_path /= urdf_path.filename();
