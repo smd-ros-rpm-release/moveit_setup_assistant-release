@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -33,17 +33,6 @@
  *********************************************************************/
 
 /* Author: Dave Coleman */
-
-// ******************************************************************************************
-/* DEVELOPER NOTES
-
-   This class is shared with all widgets and contains the common configuration data
-   needed for generating each robot's MoveIt configuration package. All SRDF data is
-   contained in a subclass of this class - srdf_writer.cpp. This class also contains
-   the functions for writing out the configuration files. Maybe it would have been best to
-   keep the writing out functions in configuration_files_widget.cpp, but I am not sure.
-*/
-// ******************************************************************************************
 
 #include <moveit/setup_assistant/tools/moveit_config_data.h>
 // Reading/Writing Files
@@ -328,6 +317,56 @@ bool MoveItConfigData::outputKinematicsYAML( const std::string& file_path )
   return true; // file created successfully
 }
 
+bool MoveItConfigData::outputFakeControllersYAML( const std::string& file_path )
+{
+  YAML::Emitter emitter;
+  emitter << YAML::BeginMap;
+
+  emitter << YAML::Key << "controller_list";
+  emitter << YAML::Value << YAML::BeginSeq;
+
+  // Union all the joints in groups
+  std::set<const robot_model::JointModel*> joints;
+
+  // Loop through groups
+  for (std::vector<srdf::Model::Group>::iterator group_it = srdf_->groups_.begin();
+       group_it != srdf_->groups_.end();  ++group_it)
+  {
+    // Get list of associated joints
+    const robot_model::JointModelGroup *joint_model_group =
+      getRobotModel()->getJointModelGroup( group_it->name_ );
+    emitter << YAML::BeginMap;
+    const std::vector<const robot_model::JointModel*> &joint_models = joint_model_group->getActiveJointModels();
+    emitter << YAML::Key << "name";
+    emitter << YAML::Value << "fake_" + group_it->name_ + "_controller";
+    emitter << YAML::Key << "joints";
+    emitter << YAML::Value << YAML::BeginSeq;
+    
+    // Iterate through the joints
+    for (std::vector<const robot_model::JointModel*>::const_iterator joint_it = joint_models.begin();
+         joint_it != joint_models.end(); ++joint_it)
+    {
+      emitter << (*joint_it)->getName();
+    }
+    emitter << YAML::EndSeq; 
+    emitter << YAML::EndMap;
+  }
+  emitter << YAML::EndSeq; 
+  emitter << YAML::EndMap; 
+
+  std::ofstream output_stream( file_path.c_str(), std::ios_base::trunc );
+  if( !output_stream.good() )
+  {
+    ROS_ERROR_STREAM( "Unable to open file for writing " << file_path );
+    return false;
+  }
+
+  output_stream << emitter.c_str();
+  output_stream.close();
+
+  return true; // file created successfully
+}
+
 // ******************************************************************************************
 // Output joint limits config files
 // ******************************************************************************************
@@ -350,7 +389,7 @@ bool MoveItConfigData::outputJointLimitsYAML( const std::string& file_path )
     const robot_model::JointModelGroup *joint_model_group =
       getRobotModel()->getJointModelGroup( group_it->name_ );
 
-    std::vector<const robot_model::JointModel*> joint_models = joint_model_group->getJointModels();
+    const std::vector<const robot_model::JointModel*> &joint_models = joint_model_group->getJointModels();
 
     // Iterate through the joints
     for (std::vector<const robot_model::JointModel*>::const_iterator joint_it = joint_models.begin();
@@ -368,26 +407,29 @@ bool MoveItConfigData::outputJointLimitsYAML( const std::string& file_path )
     emitter << YAML::Key << (*joint_it)->getName();
     emitter << YAML::Value << YAML::BeginMap;
 
-    double vel = (*joint_it)->getMaximumVelocity();
+    const robot_model::VariableBounds &b = (*joint_it)->getVariableBounds()[0];
 
     // Output property
     emitter << YAML::Key << "has_velocity_limits";
-    if (vel > std::numeric_limits<double>::epsilon())
+    if (b.velocity_bounded_)
       emitter << YAML::Value << "true";
     else
       emitter << YAML::Value << "false";
 
     // Output property
     emitter << YAML::Key << "max_velocity";
-    emitter << YAML::Value << (*joint_it)->getMaximumVelocity();
-
+    emitter << YAML::Value << std::min(fabs(b.max_velocity_), fabs(b.min_velocity_));
+    
     // Output property
     emitter << YAML::Key << "has_acceleration_limits";
-    emitter << YAML::Value << "true";
+    if (b.acceleration_bounded_)
+      emitter << YAML::Value << "true";
+    else
+      emitter << YAML::Value << "false";
 
     // Output property
     emitter << YAML::Key << "max_acceleration";
-    emitter << YAML::Value << (*joint_it)->getMaximumVelocity() / 5.0;
+    emitter << YAML::Value << std::min(fabs(b.max_acceleration_), fabs(b.min_acceleration_));
 
     emitter << YAML::EndMap;
   }

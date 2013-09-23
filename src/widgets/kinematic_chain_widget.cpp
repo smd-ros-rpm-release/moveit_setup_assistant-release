@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -150,7 +150,7 @@ void KinematicChainWidget::setAvailable()
   const robot_model::RobotModelConstPtr &model = config_data_->getRobotModel();
 
   // Get the root joint
-  const robot_model::JointModel *root_joint = model->getRoot();
+  const robot_model::JointModel *root_joint = model->getRootJoint();
 
   addLinktoTreeRecursive( root_joint->getChildLinkModel(), NULL);
 
