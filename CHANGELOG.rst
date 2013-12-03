@@ -2,6 +2,11 @@
 Changelog for package moveit_setup_assistant
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.5 (2013-12-03)
+------------------
+* fix `#64 <https://github.com/ros-planning/moveit_setup_assistant/issues/64>`_.
+* Added Travis Continuous Integration
+
 0.5.4 (2013-10-11)
 ------------------
 * Added optional params so user knows they exist - values remain same
