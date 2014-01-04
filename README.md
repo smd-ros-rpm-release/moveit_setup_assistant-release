@@ -1,3 +1,22 @@
+## moveit_setup_assistant - 0.5.7-0
+
+User `hersh@hairynipples` released the packages in the `moveit_setup_assistant` repository by running `/usr/bin/bloom-release moveit_setup_assistant --track hydro --rosdistro hydro` on `Sat, 04 Jan 2014 06:37:35 -0000`
+
+The `moveit_setup_assistant` package was released.
+
+Version of package(s) in repository `moveit_setup_assistant`:
+- rosdistro version: `0.5.6-0`
+- old version: `0.5.6-0`
+- new version: `0.5.7-0`
+
+Versions of tools used:
+- bloom version: `0.4.4`
+- catkin_pkg version: `0.1.23`
+- rosdep version: `0.10.23`
+- rosdistro version: `0.2.17`
+- vcstools version: `0.1.32`
+
+
 ## moveit_setup_assistant - 0.5.6-0
 
 User `isucan@isucan-glaptop0` released the packages in the `moveit_setup_assistant` repository by running `/usr/bin/bloom-release -t hydro -r hydro moveit_setup_assistant` on `Tue, 31 Dec 2013 10:13:11 -0000`
